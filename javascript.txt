@@ -1,0 +1,42 @@
+<script>
+// Sélectionner / désélectionner toutes les cases
+document.getElementById('selectAll').addEventListener('click', function() {
+  const checkboxes = document.querySelectorAll('.rowCheckbox');
+  checkboxes.forEach(chk => chk.checked = this.checked);
+});
+
+// Fonction d'impression
+function printSelected() {
+  const rows = document.querySelectorAll('.rowCheckbox:checked');
+  if (rows.length === 0) {
+    alert("Veuillez sélectionner au moins une ligne à imprimer !");
+    return;
+  }
+
+  let printWindow = window.open('', '', 'height=600,width=800');
+  printWindow.document.write('<html><head><title>Impression Rebuts</title>');
+  printWindow.document.write('<style>');
+  printWindow.document.write('table { width: 100%; border-collapse: collapse; font-family: Arial; }');
+  printWindow.document.write('th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }');
+  printWindow.document.write('th { background-color: #f8f9fa; }');
+  printWindow.document.write('</style></head><body>');
+  printWindow.document.write('<h3>Liste des matériels mis au rebut</h3>');
+  printWindow.document.write('<table>');
+  printWindow.document.write('<thead><tr><th>#</th><th>TypeMateriel</th><th>Fabricant</th><th>Modele</th><th>SerialNumber</th><th>DateDepart</th><th>Observations</th></tr></thead>');
+  printWindow.document.write('<tbody>');
+
+  rows.forEach(rowCheckbox => {
+    const row = rowCheckbox.closest('tr');
+    let rowData = '';
+    for (let i = 1; i < row.cells.length - 1; i++) { // ignore checkbox & action
+      rowData += '<td>' + row.cells[i].innerText + '</td>';
+    }
+    printWindow.document.write('<tr>' + rowData + '</tr>');
+  });
+
+  printWindow.document.write('</tbody></table>');
+  printWindow.document.write('</body></html>');
+  printWindow.document.close();
+  printWindow.print();
+}
+</script>

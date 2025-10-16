@@ -1,0 +1,7 @@
+<div class="row mb-2">
+  <div class="col-lg-12">
+    <button type="button" class="btn btn-primary btn-sm" onclick="printSelected()">
+      <i class="fa fa-print"></i> Imprimer la sélection
+    </button>
+  </div>
+</div>
