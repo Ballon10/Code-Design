@@ -1,37 +1,36 @@
 <style>
-/* --- Conteneur du tableau --- */
+/* ✅ Le conteneur du tableau défile indépendamment */
 .tableBox {
-  max-height: 70vh; /* la hauteur visible du tableau (ajuste selon ton écran) */
-  overflow-y: auto; /* active le défilement vertical uniquement sur le tableau */
+  height: calc(100vh - 260px); /* ajuste selon la hauteur de ta navbar + footer */
+  overflow-y: auto; /* active le défilement vertical interne */
   border: 1px solid #ddd;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  background: white;
+  background: #fff;
 }
 
-/* --- Fixe l’en-tête --- */
+/* ✅ L’en-tête du tableau reste fixe */
 .tableBox thead th {
   position: sticky;
   top: 0;
-  background-color: #f8f9fa; /* couleur de fond de l’en-tête */
-  z-index: 2; /* garde le header au-dessus du contenu */
+  background-color: #f8f9fa; /* couleur du fond de l’en-tête */
+  z-index: 5; /* reste au-dessus du contenu */
   text-align: center;
-  border-bottom: 2px solid #ccc;
 }
 
-/* --- Ajustement de la table --- */
+/* ✅ Table en pleine largeur */
 .tableBox table {
   width: 100%;
   border-collapse: collapse;
 }
 
-/* --- Pour éviter le scroll global de la page --- */
-body, html {
+/* ✅ Supprime seulement le scroll global vertical de la page principale AdminLTE */
+html, body {
   height: 100%;
-  overflow: hidden; /* empêche le scroll de toute la page */
+  overflow: auto; /* réactive le scroll global pour éviter blocage */
 }
 
+/* ✅ Empêche la navbar et sidebar de bouger */
 .content-wrapper {
-  height: calc(100vh - 100px); /* ajustement selon ta navbar + footer */
+  overflow: hidden; /* bloque le scroll global dans le wrapper */
   display: flex;
   flex-direction: column;
 }
