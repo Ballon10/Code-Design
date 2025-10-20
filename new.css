@@ -1,0 +1,56 @@
+<style>
+/* ✅ On laisse le scroll global géré par AdminLTE */
+html, body {
+  height: 100%;
+  overflow: hidden; /* Empêche un second scroll sur la page */
+}
+
+/* ✅ Le conteneur principal de contenu AdminLTE */
+.content-wrapper {
+  overflow: hidden; /* Empêche la double barre de défilement */
+  display: flex;
+  flex-direction: column;
+}
+
+/* ✅ Zone du tableau défilante */
+.tableBox {
+  flex-grow: 1;
+  overflow-y: auto; /* Une seule barre verticale */
+  overflow-x: auto; /* En cas de nombreuses colonnes */
+  height: calc(100vh - 250px); /* Ajuste selon la taille de ton header/footer */
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 6px;
+}
+
+/* ✅ Table toujours pleine largeur */
+.tableBox table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0;
+}
+
+/* ✅ En-tête du tableau fixe */
+.tableBox thead th {
+  position: sticky;
+  top: 0;
+  background-color: #f8f9fa;
+  z-index: 10;
+  text-align: center;
+  box-shadow: 0 2px 3px rgba(0,0,0,0.05);
+}
+
+/* ✅ Apparence générale */
+.tableBox tbody td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.tableBox::-webkit-scrollbar {
+  width: 8px;
+}
+.tableBox::-webkit-scrollbar-thumb {
+  background-color: #c1c1c1;
+  border-radius: 4px;
+}
+</style>
