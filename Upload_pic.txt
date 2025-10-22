@@ -1,0 +1,14 @@
+ <?php 
+  $notice="";
+  if (isset($_POST['safeIn'])) 
+  {
+    $filename = $_FILES['inPic']['name'];
+    move_uploaded_file($_FILES["inPic"]["tmp_name"], "photo/".$_FILES["inPic"]["name"]);
+    if ($con->query("insert into categories (name,pic) value ('$_POST[name]','$filename')")) {
+      $notice ="<div class='alert alert-success'>Successfully Saved</div>";
+    }
+    else
+      $notice ="<div class='alert alert-danger'>Not saved Error:".$con->error."</div>";
+  }
+
+   ?>
