@@ -1,0 +1,57 @@
+=========================================================================================================================
+<a href="#" 
+   class="dropdown-item btnVoir" 
+   data-toggle="modal" 
+   data-target="#approveModal"
+   data-nom="<?php echo $row['nomPrenom']; ?>"
+   data-role="<?php echo $row['role']; ?>"
+   data-matricule="<?php echo $row['matricule']; ?>"
+   data-email="<?php echo $row['email']; ?>">
+   <span class="fa fa-eye text-primary"></span> voir
+</a>
+=========================================================================================================================
+<script>
+$(document).on('click', '.btnVoir', function() {
+    var nom = $(this).data('nom');
+    var role = $(this).data('role');
+    var matricule = $(this).data('matricule');
+    var email = $(this).data('email');
+
+    $('#modalNom').val(nom);
+    $('#modalRole').val(role);
+    $('#modalMatricule').val(matricule);
+    $('#modalEmail').val(email);
+});
+</script>
+=======================================================================================================================
+<div class="modal fade" id="approveModal" tabindex="-1" role="dialog" aria-labelledby="approveModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Modifier l'utilisateur</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form method="post" id="formUpdateUser">
+        <div class="modal-body">
+          <label>Nom</label>
+          <input type="text" class="form-control" id="modalNom" name="nomPrenom">
+
+          <label>Matricule</label>
+          <input type="text" class="form-control" id="modalMatricule" name="matricule" readonly>
+
+          <label>Role</label>
+          <input type="text" class="form-control" id="modalRole" name="role">
+
+          <label>Email</label>
+          <input type="text" class="form-control" id="modalEmail" name="email">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+          <button type="submit" class="btn btn-primary" name="updateUser">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
