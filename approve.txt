@@ -1,0 +1,100 @@
+<?php
+ 
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+include_once '../assets/db.php'; // Assurez-vous que le chemin vers votre fichier de connexion est correct
+
+$date = date('Y-m-d H:i:s');
+//Get email Validateur
+$req_apprpove = $con->query("SELECT * FROM approval WHERE service = 'DCTIO'");
+$row_approve = $req_apprpove -> fetch_assoc();
+$emailValidateur = "Basile.Souwina;Nouredine.Ahmadou@socgen.com"; // Destinataire de l'e-mail pour confirmation reception materiel
+$nomValidateur = "Team SIOP"; //Destinataire de l'e-mail pour confirmation reception materiel
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Récupérer les données envoyées
+    $motif = $_POST['motif'] ?? '';
+    $recuPar = $_POST['recuPar'] ?? '';
+    $ids = isset($_POST['ids']) ? json_decode($_POST['ids'], true) : [];
+	
+	//$name = $_POST['recuPar'];
+    $file = $_FILES['inFile'];
+	//$fileType = mime_content_type();
+    // Vérification du type de fichier
+    $allowed = ['application/pdf'];
+    if (in_array($file['type'], $allowed)) {
+
+        // Créer un dossier pour stocker les PDF s’il n’existe pas
+        $uploadDir = 'uploads/pdf/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        // Générer un nom unique
+        $fileName = uniqid() . '_' . basename($file['name']);
+        $uploadPath = $uploadDir . $fileName;
+
+        if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
+            echo "<p style='color:green;'>Fichier PDF uploadé avec succès : $fileName</p>";
+        } else {
+            echo "<p style='color:red;'>Erreur lors du téléchargement du fichier.</p>";
+        }
+    } else {
+        echo "<p style='color:red;'>Seuls les fichiers PDF sont autorisés.</p>";
+    }
+	
+    if (is_array($ids) && count($ids) > 0) {
+        // Préparer les placeholders
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $sql = "UPDATE rebus SET motifRecepteur = ?, responsableArrivee = ?, statut = 'Reçu', dateArrivee = ? WHERE id IN ($placeholders)";
+
+        // Construire la chaîne de types dynamiquement
+        $types = str_repeat('s', 3) . str_repeat('i', count($ids));
+        $params = array_merge([$motif, $recuPar, $date], array_map('intval', $ids));
+
+        // Préparer la requête
+        if ($stmt = $con->prepare($sql)) {
+            // Lier les paramètres
+            $stmt->bind_param($types, ...$params);
+
+            // Exécuter la requête
+            if ($stmt->execute()) {
+                echo 'Les éléments sélectionnés ont été approuvés avec succès.';
+            } else {
+                echo 'Erreur lors de la mise à jour des éléments : ' . $stmt->error;
+            }
+
+            $stmt->close();
+            $destinataire = $emailValidateur;// Destinataire de l'e-mail pour confirmation reception materiel
+           
+           $sujet = "Notification de Mise au Rebus des materiels";// Sujet de l'e-mail
+
+           $message = "Bonjour ".$nomValidateur.", <br>
+           Nous confirmons la sortie/reception de materiel <br>
+            Date : ".$date."<br>
+            Recu Par : ".$recuPar."<br>
+           Cordialement."; // Corps de l'e-mail
+
+           // En-têtes de l'e-mail
+           $headers = "From: nouredine.ahmadou@socgen.com\r\n";//adresse expediteur à recuperer de facon dynamique
+           $headers .= "Reply-To: nouredine.ahmadou@socgen.com\r\n";//adresse expediteur 
+           $headers .= "Content-type: text/html; charset=UTF-8\r\n";
+
+           // Envoi de l'e-mail
+           if (mail($destinataire, $sujet, $message, $headers)) {
+               echo "<div class='alert alert-success'><center>L'e-mail a été envoyé avec succès à $destinataire</div>";
+           }
+        } else {
+            echo 'Erreur de préparation de la requête : ' . $con->error;
+        }
+    } else {
+        echo 'Aucun ID valide fourni.';
+    }
+
+    $con->close();
+} else {
+    echo 'La requête n\'est pas une POST.';
+}
+?>
