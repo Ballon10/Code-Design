@@ -1,0 +1,124 @@
+<?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+include_once '../assets/db.php'; // Fichier de connexion
+
+$date = date('Y-m-d H:i:s');
+
+// Get email Validateur
+$req_apprpove = $con->query("SELECT * FROM approval WHERE service = 'DCTIO'");
+$row_approve = $req_apprpove ? $req_apprpove->fetch_assoc() : [];
+$emailValidateur = "Basile.Souwina;Nouredine.Ahmadou@socgen.com"; 
+$nomValidateur = "Team SIOP"; 
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // 🔹 Récupération des données envoyées par le JS
+    $motif = $_POST['motif'] ?? '';
+    $recuPar = $_POST['recuPar'] ?? '';
+    $ids = isset($_POST['ids']) ? json_decode($_POST['ids'], true) : [];
+
+    // ==========================================================
+    // 🔹 Vérification de l'upload du fichier
+    // ==========================================================
+    if (!isset($_FILES['pdf_file']) || $_FILES['pdf_file']['error'] !== UPLOAD_ERR_OK) {
+        echo "❌ Aucun fichier PDF reçu ou erreur lors de l’upload.";
+        exit;
+    }
+
+    $file = $_FILES['pdf_file'];
+
+    // Vérifier le vrai type MIME
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $fileType = finfo_file($finfo, $file['tmp_name']);
+    finfo_close($finfo);
+
+    if ($fileType !== 'application/pdf') {
+        echo "❌ Le fichier n’est pas un PDF valide.";
+        exit;
+    }
+
+    // ==========================================================
+    // 🔹 Déplacement du fichier vers le dossier permanent
+    // ==========================================================
+    $uploadDir = __DIR__ . '/uploads/pdf/';
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0777, true);
+    }
+
+    $fileName = uniqid('decharge_') . '_' . basename($file['name']);
+    $uploadPath = $uploadDir . $fileName;
+
+    if (!move_uploaded_file($file['tmp_name'], $uploadPath)) {
+        echo "❌ Erreur lors du déplacement du fichier PDF.";
+        exit;
+    }
+
+    echo "✅ Fichier PDF uploadé avec succès : $fileName<br>";
+
+    // ==========================================================
+    // 🔹 Mise à jour de la base de données
+    // ==========================================================
+    if (is_array($ids) && count($ids) > 0) {
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $sql = "UPDATE rebus 
+                SET motifRecepteur = ?, 
+                    responsableArrivee = ?, 
+                    statut = 'Reçu', 
+                    dateArrivee = ?, 
+                    fichierPDF = ? 
+                WHERE id IN ($placeholders)";
+
+        $types = "ssss" . str_repeat("i", count($ids));
+        $params = array_merge([$motif, $recuPar, $date, $fileName], array_map('intval', $ids));
+
+        if ($stmt = $con->prepare($sql)) {
+            $stmt->bind_param($types, ...$params);
+
+            if ($stmt->execute()) {
+                echo "✅ Les éléments sélectionnés ont été approuvés avec succès.<br>";
+            } else {
+                echo "❌ Erreur SQL : " . $stmt->error;
+            }
+
+            $stmt->close();
+        } else {
+            echo "❌ Erreur de préparation de la requête : " . $con->error;
+        }
+
+        // ==========================================================
+        // 🔹 Envoi de mail de notification
+        // ==========================================================
+        $destinataire = $emailValidateur;
+        $sujet = "Notification de Mise au Rebus des matériels";
+
+        $message = "
+        Bonjour $nomValidateur,<br><br>
+        Nous confirmons la réception/sortie de matériel.<br><br>
+        📅 Date : $date<br>
+        👤 Reçu Par : $recuPar<br>
+        💬 Commentaire : $motif<br><br>
+        Fichier joint : $fileName<br>
+        Cordialement,<br>
+        MyAsset Notification System.
+        ";
+
+        $headers = "From: nouredine.ahmadou@socgen.com\r\n";
+        $headers .= "Reply-To: nouredine.ahmadou@socgen.com\r\n";
+        $headers .= "Content-type: text/html; charset=UTF-8\r\n";
+
+        if (mail($destinataire, $sujet, $message, $headers)) {
+            echo "<div class='alert alert-success'>📧 E-mail envoyé avec succès à $destinataire</div>";
+        } else {
+            echo "<div class='alert alert-warning'>⚠️ Échec de l’envoi de l’e-mail.</div>";
+        }
+    } else {
+        echo "❌ Aucun ID valide fourni.";
+    }
+
+    $con->close();
+} else {
+    echo "⚠️ Requête invalide : méthode non POST.";
+}
+?>
