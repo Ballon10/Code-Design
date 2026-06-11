@@ -1,0 +1,173 @@
+Option Explicit
+
+'=========================================================
+' PARAMETRES
+'=========================================================
+
+Dim SourceFolder
+Dim ZipFile
+Dim SMTPServer
+Dim SMTPPort
+Dim SMTPUser
+Dim SMTPPassword
+Dim FromAddress
+Dim ToAddress
+
+SourceFolder = "\serveur\partage\rapports"
+ZipFile      = "C:\Temp\Rapports.zip"
+
+SMTPServer   = "smtp.monentreprise.com"
+SMTPPort     = 25
+
+' Laisser vide si le serveur SMTP n'exige pas
+' d'authentification.
+SMTPUser     = ""
+SMTPPassword = ""
+
+FromAddress  = "[expediteur@domaine.com](mailto:expediteur@domaine.com)"
+ToAddress    = "[destinataire@domaine.com](mailto:destinataire@domaine.com)"
+
+'=========================================================
+' PROGRAMME PRINCIPAL
+'=========================================================
+
+Dim fso
+
+Set fso = CreateObject("Scripting.FileSystemObject")
+
+If Not fso.FolderExists(SourceFolder) Then
+WScript.Echo "Erreur : repertoire introuvable : " & SourceFolder
+WScript.Quit 1
+End If
+
+If fso.FileExists(ZipFile) Then
+fso.DeleteFile ZipFile, True
+End If
+
+If Not CreateZip(SourceFolder, ZipFile) Then
+WScript.Echo "Erreur lors de la creation du ZIP."
+WScript.Quit 1
+End If
+
+If Not fso.FileExists(ZipFile) Then
+WScript.Echo "Le fichier ZIP n'a pas ete cree."
+WScript.Quit 1
+End If
+
+If fso.GetFile(ZipFile).Size = 0 Then
+WScript.Echo "Le fichier ZIP est vide."
+WScript.Quit 1
+End If
+
+If Not SendMailCDO( _
+SMTPServer, _
+SMTPPort, _
+SMTPUser, _
+SMTPPassword, _
+FromAddress, _
+ToAddress, _
+"Rapports compresses", _
+"Veuillez trouver ci-joint les rapports compresses.", _
+ZipFile) Then
+
+```
+WScript.Echo "Erreur lors de l'envoi du mail."
+WScript.Quit 1
+```
+
+End If
+
+WScript.Echo "Traitement termine avec succes."
+
+'=========================================================
+' CREATION DU ZIP AVEC POWERSHELL
+'=========================================================
+
+Function CreateZip(FolderPath, ZipPath)
+
+```
+Dim cmd
+Dim rc
+
+cmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command " & _
+      Chr(34) & _
+      "Compress-Archive -Path '" & FolderPath & "\*' -DestinationPath '" & ZipPath & "' -Force" & _
+      Chr(34)
+
+rc = CreateObject("WScript.Shell").Run(cmd, 0, True)
+
+CreateZip = (rc = 0)
+```
+
+End Function
+
+'=========================================================
+' ENVOI DU MAIL CDO
+'=========================================================
+
+Function SendMailCDO( _
+SmtpServer, _
+SmtpPort, _
+UserName, _
+Password, _
+FromAddr, _
+ToAddr, _
+Subject, _
+Body, _
+Attachment)
+
+```
+On Error Resume Next
+
+Dim Msg
+Dim Conf
+
+Set Msg = CreateObject("CDO.Message")
+Set Conf = CreateObject("CDO.Configuration")
+
+With Conf.Fields
+
+    .Item("http://schemas.microsoft.com/cdo/configuration/sendusing") = 2
+    .Item("http://schemas.microsoft.com/cdo/configuration/smtpserver") = SmtpServer
+    .Item("http://schemas.microsoft.com/cdo/configuration/smtpserverport") = SmtpPort
+
+    If Trim(UserName) <> "" Then
+
+        .Item("http://schemas.microsoft.com/cdo/configuration/smtpauthenticate") = 1
+        .Item("http://schemas.microsoft.com/cdo/configuration/sendusername") = UserName
+        .Item("http://schemas.microsoft.com/cdo/configuration/sendpassword") = Password
+
+    End If
+
+    .Update
+
+End With
+
+Set Msg.Configuration = Conf
+
+With Msg
+
+    .From = FromAddr
+    .To = ToAddr
+    .Subject = Subject
+    .TextBody = Body
+
+    If Attachment <> "" Then
+        .AddAttachment Attachment
+    End If
+
+    .Send
+
+End With
+
+If Err.Number <> 0 Then
+    WScript.Echo "Erreur CDO : " & Err.Number & " - " & Err.Description
+    SendMailCDO = False
+Else
+    SendMailCDO = True
+End If
+
+On Error GoTo 0
+```
+
+End Function
