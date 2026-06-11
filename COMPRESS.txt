@@ -1,0 +1,77 @@
+Option Explicit
+
+Dim sourceFolder, zipFile
+
+sourceFolder = "\serveur\partage\rapports"
+zipFile = "C:\Temp\rapports.zip"
+
+CreateZip sourceFolder, zipFile
+
+WScript.Sleep 10000
+
+SendMailCDO _
+"smtp.monentreprise.com", _
+25, _
+"[expediteur@monentreprise.com](mailto:expediteur@monentreprise.com)", _
+"[destinataire@monentreprise.com](mailto:destinataire@monentreprise.com)", _
+"Rapports compressés", _
+"Veuillez trouver ci-joint les rapports compressés.", _
+zipFile
+
+MsgBox "Mail envoyé"
+
+'===================================================
+Sub CreateZip(folderPath, zipPath)
+
+```
+Dim fso, sh, zip
+
+Set fso = CreateObject("Scripting.FileSystemObject")
+
+If fso.FileExists(zipPath) Then
+    fso.DeleteFile zipPath, True
+End If
+
+Set zip = CreateObject("ADODB.Stream")
+zip.Type = 1
+zip.Open
+zip.Write ChrB(&H50) & ChrB(&H4B) & ChrB(&H5) & ChrB(&H6) & String(18, Chr(0))
+zip.SaveToFile zipPath, 2
+zip.Close
+
+Set sh = CreateObject("Shell.Application")
+
+sh.NameSpace(zipPath).CopyHere sh.NameSpace(folderPath).Items
+```
+
+End Sub
+
+'===================================================
+Sub SendMailCDO(SmtpServer, Port, FromAddr, ToAddr, Subject, Body, Attachment)
+
+```
+Dim Msg, Conf
+
+Set Msg = CreateObject("CDO.Message")
+Set Conf = CreateObject("CDO.Configuration")
+
+With Conf.Fields
+    .Item("http://schemas.microsoft.com/cdo/configuration/sendusing") = 2
+    .Item("http://schemas.microsoft.com/cdo/configuration/smtpserver") = SmtpServer
+    .Item("http://schemas.microsoft.com/cdo/configuration/smtpserverport") = Port
+    .Update
+End With
+
+Set Msg.Configuration = Conf
+
+With Msg
+    .From = FromAddr
+    .To = ToAddr
+    .Subject = Subject
+    .TextBody = Body
+    .AddAttachment Attachment
+    .Send
+End With
+```
+
+End Sub
